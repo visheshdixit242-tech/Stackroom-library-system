@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stackroom Pro — Library Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --paper:#F1E9D8; --card:#FFFCF4; --ink:#232019; --green:#24423A; --green-dark:#182E28; --clay:#AE4E2E; --brass:#B08D57; --rule:#D9CDAF; --blue:#2C5B41; --success:#2E7D32; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ background:var(--paper); color:var(--ink); font-family:'Source Sans 3', sans-serif; font-size:15px; }
+
+  #loginScreen{ position:fixed; inset:0; background:linear-gradient(135deg,var(--green-dark) 0%, var(--green) 100%); display:flex; align-items:center; justify-content:center; z-index:999; }
+ .login-box{ background:var(--card); padding:48px 40px; border-radius:10px; width:400px; box-shadow:0 25px 70px rgba(0,0,0,0.4); border-top:5px solid var(--brass); }
+ .login-logo{ text-align:center; margin-bottom:24px; }
+ .login-logo h1{ font-family:'Fraunces'; font-size:2rem; color:var(--green-dark); }
+ .login-logo p{ font-family:'IBM Plex Mono'; font-size:0.7rem; color:var(--brass); letter-spacing:0.2em; }
+ .login-box input,.login-box select{ width:100%; padding:14px; margin:10px 0; border:1px solid var(--rule); border-radius:5px; font-size:0.95rem; }
+ .login-box button{ width:100%; padding:14px; background:var(--green-dark); color:#fff; border:none; border-radius:5px; cursor:pointer; font-family:'IBM Plex Mono'; font-weight:600; }
+ .login-error{ color:var(--clay); font-size:0.85rem; text-align:center; margin-top:10px; display:none; }
+
+ .app{ display:none; grid-template-columns: 260px 1fr; min-height:100vh; }
+ .app.logged-in{ display:grid; }
+ .drawer-nav{ background:var(--green-dark); color:#F6EFDE; display:flex; flex-direction:column; }
+ .brand{ padding:28px 24px; border-bottom:1px solid rgba(246,239,222,0.1); }
+ .brand h2{ font-family:'Fraunces'; font-size:1.7rem; color:#F6EFDE; }
+ .brand small{ font-family:'IBM Plex Mono'; font-size:0.65rem; letter-spacing:0.15em; color:var(--brass); }
+ .nav-links{ flex:1; padding:16px 0; }
+ .drawer-tab{ width:100%; padding:14px 24px; background:transparent; border:none; color:rgba(246,239,222,0.75); text-align:left; cursor:pointer; font-family:'IBM Plex Mono'; font-size:0.8rem; text-transform:uppercase; }
+ .drawer-tab.active{ background:var(--paper); color:var(--green-dark); font-weight:600; border-right:4px solid var(--brass); }
+ .drawer-tab.admin-only{ border-left:3px solid var(--clay); }
+ .drawer-tab.hidden{ display:none; }
+ .logout-wrap{ padding:20px 24px; border-top:1px solid rgba(246,239,222,0.1); }
+ .logout{ width:100%; background:var(--clay); padding:12px; border-radius:5px; }
+
+  main{ padding:36px 44px; overflow-y:auto; }
+ .page-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; }
+  h1{ font-family:'Fraunces'; font-size:2rem; color:var(--green-dark); }
+ .role-badge{ background:var(--brass); color:#fff; padding:6px 14px; border-radius:20px; font-size:0.75rem; font-weight:600; }
+
+ .hidden{ display:none!important; }
+ .panel{ background:var(--card); border:1px solid var(--rule); border-radius:8px; margin-bottom:28px; }
+ .panel-head{ padding:20px 24px; border-bottom:1px solid var(--rule); display:flex; justify-content:space-between; align-items:center; }
+ .panel-head h2{ font-family:'Fraunces'; font-size:1.25rem; color:var(--green-dark); }
+ .panel-body{ padding:24px; }
+
+  button{ padding:11px 18px; background:var(--green-dark); color:#fff; border:none; border-radius:5px; cursor:pointer; font-family:'IBM Plex Mono'; font-size:0.8rem; }
+  button.ghost{ background:transparent; color:var(--green-dark); border:1px solid var(--rule); }
+  button.danger{ background:var(--clay); }
+  button.success{ background:var(--success); }
+  button.small{ padding:6px 12px; font-size:0.75rem; }
+  input, select, textarea{ padding:10px 14px; border:1px solid var(--rule); border-radius:5px; font-family:inherit; font-size:0.9rem; width:100%; }
+  label{ display:block; font-size:0.85rem; font-weight:500; margin-bottom:6px; color:#555; }
+ .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+
+  table{ width:100%; border-collapse:collapse; }
+  th{ background:#F9F4E8; padding:14px 16px; text-align:left; font-family:'IBM Plex Mono'; font-size:0.75rem; }
+  td{ padding:14px 16px; border-bottom:1px solid var(--rule); }
+ .overdue-row{ background:rgba(174,78,46,0.06); }
+ .badge{ background:var(--clay); color:#fff; padding:4px 10px; border-radius:12px; font-size:0.7rem; }
+ .salary{ color:var(--blue); font-weight:700; }
+
+ .stats-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:20px; }
+ .stat-card{ background:var(--card); padding:24px; border-radius:8px; border-left:4px solid var(--brass); }
+ .stat-card.num{ font-family:'Fraunces'; font-size:2rem; color:var(--green-dark); }
+
+ .toolbar{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+ .catalog-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:24px; }
+ .book-card{ background:linear-gradient(145deg, #8B4513, #A0522D); color:#fff; padding:18px; height:260px; cursor:pointer; border-radius:6px 12px 12px 6px; }
+ .book-card.cat{ font-size:0.65rem; background:rgba(0,0,0,0.35); padding:4px 10px; border-radius:12px; }
+
+ .overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:50; }
+ .overlay.open{ display:flex; }
+ .modal{ background:var(--card); border-radius:10px; width:600px; }
+ .reader-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.92); display:none; align-items:center; justify-content:center; z-index:100; }
+ .reader-overlay.open{ display:flex; }
+ .book-reader{ width:92%; max-width:1000px; height:92vh; background:var(--paper); border-radius:10px; display:grid; grid-template-rows:auto 1fr auto; }
+ .reader-body{ padding:50px 80px; overflow-y:auto; background:#FFFCF4; font-size:1.15rem; line-height:1.9; white-space:pre-wrap; }
+ .toast{ position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:var(--green-dark); color:#fff; padding:14px 28px; border-radius:6px; opacity:0; transition:opacity 0.3s; }
+ .toast.show{ opacity:1; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo"><h1>Stackroom</h1><p>LIBRARY MANAGEMENT</p></div>
+    <select id="roleSelect"><option value="admin">Admin Login</option><option value="employee">Employee Login</option><option value="student">Student Login</option></select>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Sign In</button>
+    <p class="login-error" id="loginError">Invalid Username or Password</p>
+    <p style="font-size:0.8rem;text-align:center;margin-top:15px;">Demo: admin/1234 | emp/1234 | student1/1234</p>
+  </div>
+</div>
+
+<div class="app" id="mainApp">
+  <nav class="drawer-nav">
+    <div class="brand"><h2>Stackroom</h2><small>LIBRARY MANAGEMENT</small></div>
+    <div class="nav-links">
+      <button class="drawer-tab active" data-view="dashboard">Dashboard</button>
+      <button class="drawer-tab" data-view="catalog">Catalog</button>
+      <button class="drawer-tab" data-view="members">Members</button>
+      <button class="drawer-tab" data-view="circulation">Circulation</button>
+      <button class="drawer-tab" data-view="overdue">Overdue</button>
+      <button class="drawer-tab" data-view="mybooks">My Books</button>
+      <button class="drawer-tab admin-only hidden" data-view="employees">Employee Data</button>
+      <button class="drawer-tab admin-only hidden" data-view="students">Student Data</button>
+      <button class="drawer-tab admin-only hidden" data-view="salary">Salary Report</button>
+    </div>
+    <div class="logout-wrap"><button class="logout" onclick="logout()">Logout</button></div>
+  </nav>
+
+  <main>
+    <section id="view-dashboard" class="view"><div class="page-header"><h1>Dashboard</h1><span class="role-badge" id="roleBadge"></span></div><div class="stats-grid" id="stats"></div></section>
+    <section id="view-catalog" class="view hidden"><div class="page-header"><h1>Book Catalog</h1></div><div class="panel"><div class="panel-head"><div class="toolbar"><input type="text" id="searchInput" placeholder="Search..."><select id="categoryFilter"><option value="">All Categories</option></select></div><div><button id="btnAddBook" class="admin-only-btn hidden">+ Add Book</button><button id="btnManageCat" class="admin-only-btn hidden ghost">Manage Categories</button></div></div><div class="panel-body"><div class="catalog-grid" id="catalogGrid"></div></div></div></section>
+    <section id="view-members" class="view hidden"><div class="page-header"><h1>Members</h1></div><div class="panel"><div class="panel-head"><button id="btnAddMember" class="admin-only-btn hidden success">+ Add Member</button></div><div class="panel-body"><table id="membersTable"><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Books</th></tr></thead><tbody></tbody></table></div></div></section>
+    <section id="view-circulation" class="view hidden"><div class="page-header"><h1>Circulation</h1></div><div class="panel"><div class="panel-head"><h2>Issue Book</h2></div><div class="panel-body"><div class="field-row"><div><label>Book</label><select id="issueBookSelect"></select></div><div><label>Member</label><select id="issueMemberSelect"></select></div><div><label>Issue Date</label><input type="date" id="issueDate"></div><div><label>Due Date</label><input type="date" id="dueDate"></div></div><button id="btnIssue">Issue Book</button></div></div><div class="panel"><div class="panel-head"><h2>Active Loans</h2></div><div class="panel-body"><table id="loansTable"><thead><tr><th>Book</th><th>Member</th><th>Issued</th><th>Due</th><th>Action</th></tr></thead><tbody></tbody></table></div></div></section>
+    <section id="view-overdue" class="view hidden"><div class="page-header"><h1>Overdue</h1></div><div class="panel"><div class="panel-body"><table id="overdueTable"><thead><tr><th>Book</th><th>Member</th><th>Due</th><th>Days Late</th><th>Fine</th><th>Action</th></tr></thead><tbody></tbody></table></div></div></section>
+    <section id="view-mybooks" class="view hidden"><div class="page-header"><h1>My Books</h1></div><div id="myBooksList"></div></section>
+    <section id="view-employees" class="view hidden admin-only"><div class="page-header"><h1>Employee Data</h1></div><div class="panel"><div class="panel-head"><button id="btnAddEmployee" class="success">+ Add Employee</button></div><div class="panel-body"><table id="employeesTable"><thead><tr><th>Emp No</th><th>Name</th><th>Email</th><th>Category</th><th>Address</th><th>Salary</th><th>Joining</th><th>Action</th></tr></thead><tbody></tbody></table></div></div></section>
+    <section id="view-students" class="view hidden admin-only"><div class="page-header"><h1>Student Data</h1></div><div class="panel"><div class="panel-body"><table id="studentsTable"><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Books</th><th>Status</th></tr></thead><tbody></tbody></table></div></div></section>
+    <section id="view-salary" class="view hidden admin-only"><div class="page-header"><h1>Salary Report</h1></div><div id="salaryReport"></div><div class="panel"><div class="panel-body"><b>Total Payout:</b> <span id="totalSalary" class="salary"></span></div></div></section>
+  </main>
+</div>
+
+<div class="overlay" id="categoryOverlay"><div class="modal"><div class="panel-head"><h2>Manage Categories</h2><button class="ghost small" data-close="categoryOverlay">✕</button></div><div class="panel-body"><div id="categoryList"></div><div class="field-row"><input id="newCat" placeholder="New Category"><button onclick="addCategory()">Add</button></div></div></div></div>
+<div class="overlay" id="employeeOverlay"><div class="modal"><div class="panel-head"><h2>Add Employee</h2><button class="ghost small" data-close="employeeOverlay">✕</button></div><div class="panel-body"><div class="field-row"><div><label>Emp No</label><input id="eNo"></div><div><label>Name</label><input id="eName"></div></div><div class="field-row"><div><label>Email</label><input id="eEmail"></div><div><label>Category</label><select id="eCategory"><option>Librarian</option><option>Assistant</option></select></div></div><div class="field-row"><div><label>Salary</label><input id="eSalary" type="number"></div><div><label>Joining</label><input id="eJoin" type="date"></div></div><div><label>Address</label><textarea id="eAddress" rows="3"></textarea></div><br><button id="btnSaveEmployee">Save</button></div></div></div>
+<div class="overlay" id="bookOverlay"><div class="modal"><div class="panel-head"><h2>Add Book</h2><button class="ghost small" data-close="bookOverlay">✕</button></div><div class="panel-body"><div class="field-row"><div><label>Title</label><input id="fTitle"></div><div><label>Author</label><input id="fAuthor"></div></div><div class="field-row"><div><label>Category</label><select id="fCategory"></select></div><div><label>ISBN</label><input id="fIsbn"></div></div><div class="field-row"><div><label>Copies</label><input id="fCopies" type="number" value="1"></div></div><div><label>Content. Use --- for page</label><textarea id="fContent" rows="6"></textarea></div><br><button id="btnSaveBook">Save</button></div></div></div>
+<div class="overlay" id="memberOverlay"><div class="modal"><div class="panel-head"><h2>Add Member</h2><button class="ghost small" data-close="memberOverlay">✕</button></div><div class="panel-body"><div class="field-row"><div><label>Name</label><input id="mName"></div><div><label>Email</label><input id="mEmail"></div></div><br><button id="btnSaveMember">Save</button></div></div></div>
+<div class="overlay" id="returnOverlay"><div class="modal"><div class="panel-head"><h2>Return Book</h2><button class="ghost small" data-close="returnOverlay">✕</button></div><div class="panel-body"><p><b>Book:</b> <span id="returnBookInfo"></span></p><div><label>Return Date</label><input type="date" id="returnDate"></div><br><button class="danger" id="btnConfirmReturn">Confirm</button></div></div></div>
+<div class="reader-overlay" id="readerOverlay"><div class="book-reader"><div class="panel-head"><h2 id="readerTitle"></h2><button class="danger" onclick="closeReader()">Close</button></div><div class="reader-body" id="readerContent"></div><div class="panel-head"><button onclick="prevPage()">← Prev</button><span id="pageNum"></span><button onclick="nextPage()">Next →</button></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+  // Page load hote hi data fetch karo
+
+(function(){
+  // DATA
+  let categories = ["Fiction", "Science", "History", "Biography", "Technology", "Self Help"];
+  let books = [{id:1,title:"Atomic Habits",author:"James Clear",category:"Self Help",isbn:"978-1",copies:5,copiesAvailable:4,content:`Chapter 1\nHabits are compound interest...\n---\nChapter 2\n1% Better`}]
+  let members = [{id:1,mid:"M001",name:"Rahul Sharma",email:"rahul@mail.com",username:"student1",password:"1234",type:"student"}];
+  let employees = [{id:1, empNo:"E001", name:"Amit Kumar", email:"amit@lib.com", category:"Librarian", address:"Delhi", salary:45000, joining:"2024-01-15", username:"emp", password:"1234"}]
+  let loans = []; let nextIds = {book:2, member:2, emp:2, loan:1}; let currentReturnLoanId = null;
+  let currentUser = null; let currentRole = null; let currentBook=null; let currentPage=0; const FINE=10;
+
+  const $ = s=>document.querySelector(s); const $$ = s=>Array.from(document.querySelectorAll(s));
+  const today = ()=> new Date().toISOString().slice(0,10);
+  const fmt = d=> new Date(d).toLocaleDateString('en-GB');
+  const daysLate = (due, ret)=> Math.max(0, Math.floor((new Date(ret)-new Date(due))/86400000));
+  const toast = m=>{ $("#toast").textContent=m; $("#toast").classList.add("show"); setTimeout(()=>$("#toast").classList.remove("show"),2500); }
+
+  // LOGIN
+  window.login = ()=>{
+    const role = $("#roleSelect").value; const user = $("#username").value; const pass = $("#password").value;
+    let valid = false;
+    if(role==="admin" && user==="admin" && pass==="1234"){ valid=true; }
+    if(role==="employee"){ const emp = employees.find(e=>e.username===user && e.password===pass); if(emp){ valid=true; currentUser=emp; } }
+    if(role==="student"){ const stu = members.find(m=>m.username===user && m.password===pass); if(stu){ valid=true; currentUser=stu; } }
+
+    if(valid){
+      currentRole = role;
+      localStorage.setItem("role",role); localStorage.setItem("user",JSON.stringify(currentUser));
+      $("#loginScreen").style.display="none"; $("#mainApp").classList.add("logged-in");
+      setPermissions(); renderAll();
+    } else { $("#loginError").style.display="block"; }
+  }
+  window.logout = ()=>{ localStorage.clear(); location.reload(); }
+
+  function setPermissions(){
+    $("#roleBadge").textContent = currentRole.toUpperCase();
+    if(currentRole==="admin"){ $$(".admin-only").forEach(t=>t.classList.remove("hidden")); $$(".admin-only-btn").forEach(t=>t.classList.remove("hidden")); }
+    if(currentRole==="employee"){ $("#btnAddBook").classList.add("hidden"); $("#btnAddMember").classList.add("hidden"); }
+    if(currentRole==="student"){ $$(".drawer-tab").forEach(t=>{ if(!["dashboard","catalog","mybooks"].includes(t.dataset.view)) t.classList.add("hidden"); }); }
+  }
+
+  // NAV
+  $$(".drawer-tab").forEach(tab=>tab.onclick=()=>{
+    if(tab.classList.contains("hidden")) return;
+    $$(".drawer-tab").forEach(t=>t.classList.remove("active")); tab.classList.add("active");
+    $$(".view").forEach(v=>v.classList.add("hidden")); $("#view-"+tab.dataset.view).classList.remove("hidden");
+    if(tab.dataset.view==='circulation'){ $("#issueDate").value=today(); autoSetDueDate(); }
+    if(tab.dataset.view==='mybooks') renderMyBooks();
+    renderAll();
+  });
+  $$("[data-close]").forEach(b=>b.onclick=()=>$("#"+b.dataset.close).classList.remove("open"));
+  function autoSetDueDate(){ const issue = new Date($("#issueDate").value); issue.setDate(issue.getDate()+14); $("#dueDate").value = issue.toISOString().slice(0,10); }
+  $("#issueDate").onchange = autoSetDueDate;
+
+  // RENDER
+  function renderAll(){
+    $("#stats").innerHTML=`<div class="stat-card"><h3>Total Books</h3><div class="num">${books.length}</div></div><div class="stat-card"><h3>Members</h3><div class="num">${members.length}</div></div><div class="stat-card"><h3>Employees</h3><div class="num">${employees.length}</div></div><div class="stat-card"><h3>On Loan</h3><div class="num">${loans.filter(l=>!l.returned).length}</div></div>`;
+
+    populateCategoryDropdown();
+    const search = $("#searchInput").value.toLowerCase();
+    const catFilter = $("#categoryFilter").value;
+    let filtered = books.filter(b=> (!search || b.title.toLowerCase().includes(search) || b.author.toLowerCase().includes(search)) && (!catFilter || b.category === catFilter) );
+    $("#catalogGrid").innerHTML = filtered.map(b=>`<div class="book-card" onclick="openBook(${b.id})"><div><span class="cat">${b.category}</span></div><div><div style="font-family:Fraunces;margin:10px 0;">${b.title}</div><div style="font-size:0.85rem;">by ${b.author}</div></div><div style="font-size:0.75rem;">${b.copiesAvailable}/${b.copies} Avl</div></div>`).join("");
+
+    $("#membersTable tbody").innerHTML=members.map(m=>`<tr><td>${m.mid}</td><td>${m.name}</td><td>${m.email}</td><td>${loans.filter(l=>l.memberId===m.id&&!l.returned).length}</td></tr>`).join("");
+    $("#issueBookSelect").innerHTML=books.filter(b=>b.copiesAvailable>0).map(b=>`<option value="${b.id}">${b.title}</option>`).join("");
+    $("#issueMemberSelect").innerHTML=members.map(m=>`<option value="${m.id}">${m.name}</option>`).join("");
+    const active=loans.filter(l=>!l.returned);
+    $("#loansTable tbody").innerHTML=active.map(l=>{const b=books.find(x=>x.id==l.bookId), m=members.find(x=>x.id==l.memberId); return `<tr><td>${b.title}</td><td>${m.name}</td><td>${fmt(l.issued)}</td><td>${fmt(l.due)}</td><td><button onclick="openReturn(${l.id})">Return</button></td></tr>`}).join("")||"<tr><td colspan=5>No loans</td></tr>";
+    const overdue=loans.filter(l=>!l.returned && new Date(l.due)<new Date());
+    $("#overdueTable tbody").innerHTML=overdue.map(l=>{const b=books.find(x=>x.id==l.bookId), m=members.find(x=>x.id==l.memberId); const late=daysLate(l.due, today()); return `<tr class="overdue-row"><td>${b.title}</td><td>${m.name}</td><td>${fmt(l.due)}</td><td><span class="badge">${late} days</span></td><td>₹${late*FINE}</td><td><button onclick="openReturn(${l.id})">Return</button></td></tr>`}).join("")||"<tr><td colspan=6>No overdue</td></tr>";
+
+    if(currentRole==="admin"){
+      $("#employeesTable tbody").innerHTML = employees.map(e=>`<tr><td>${e.empNo}</td><td>${e.name}</td><td>${e.email}</td><td>${e.category}</td><td>${e.address}</td><td class="salary">₹${e.salary.toLocaleString()}</td><td>${fmt(e.joining)}</td><td><button class="danger small" onclick="deleteEmp(${e.id})">Delete</button></td></tr>`).join("");
+      $("#studentsTable tbody").innerHTML = members.filter(m=>m.type==="student").map(s=>{const bc=loans.filter(l=>l.memberId===s.id&&!l.returned).length; return `<tr><td>${s.mid}</td><td>${s.name}</td><td>${s.email}</td><td>${bc}</td><td>${bc>0?'Active':'Free'}</td></tr>`}).join("");
+      $("#salaryReport").innerHTML = employees.map(e=>`<div class="panel"><div class="panel-body"><b>${e.name}</b> - ${e.category}<br>Emp No: ${e.empNo}<br>Salary: <span class="salary">₹${e.salary.toLocaleString()}</span></div></div>`).join("");
+      const total = employees.reduce((sum,e)=>sum+e.salary,0); $("#totalSalary").textContent = `₹${total.toLocaleString()}`;
+    }
+  }
+
+  function renderMyBooks(){
+    if(!currentUser) return;
+    const myLoans = loans.filter(l=>l.memberId===currentUser.id &&!l.returned);
+    $("#myBooksList").innerHTML = myLoans.length? myLoans.map(l=>{const b=books.find(x=>x.id==l.bookId); return `<div class="panel"><div class="panel-body"><b>${b.title}</b><br>Due: ${fmt(l.due)} <button style="float:right" onclick="openBook(${b.id})">Read</button></div></div>`}).join("") : "<div class='panel'><div class='panel-body'>No books issued</div></div>";
+  }
+
+  function populateCategoryDropdown(){
+    $("#categoryFilter").innerHTML = `<option value="">All Categories</option>` + categories.map(c=>`<option value="${c}">${c}</option>`).join("");
+    $("#fCategory").innerHTML = categories.map(c=>`<option value="${c}">${c}</option>`).join("");
+  }
+  $("#searchInput").oninput = renderAll;
+  $("#categoryFilter").onchange = renderAll;
+
+  // CATEGORY
+  $("#btnManageCat").onclick = ()=>{ $("#categoryList").innerHTML = categories.map(c=>`<p style="display:flex;justify-content:space-between;margin:8px 0;">${c} <button class="small danger" onclick="deleteCategory('${c}')">Delete</button></p>`).join(""); $("#categoryOverlay").classList.add("open"); }
+  window.addCategory = ()=>{ const newC = $("#newCat").value.trim(); if(newC &&!categories.includes(newC)){ categories.push(newC); $("#newCat").value=""; renderAll(); } }
+  window.deleteCategory = (cat)=>{ categories = categories.filter(c=>c!==cat); books.forEach(b=>{ if(b.category===cat) b.category="Uncategorised"; }); renderAll(); }
+
+  // CRUD
+  $("#btnAddBook").onclick=()=>$("#bookOverlay").classList.add("open");
+  $("#btnSaveBook").onclick=()=>{books.push({id:nextIds.book++,title:$("#fTitle").value,author:$("#fAuthor").value,category:$("#fCategory").value,isbn:$("#fIsbn").value,copies:+$("#fCopies").value,copiesAvailable:+$("#fCopies").value,content:$("#fContent").value});$("#bookOverlay").classList.remove("open");renderAll();toast("Book Added");}
+  $("#btnAddMember").onclick=()=>$("#memberOverlay").classList.add("open");
+  $("#btnSaveMember").onclick=()=>{members.push({id:nextIds.member++,mid:"M"+String(nextIds.member).padStart(3,"0"),name:$("#mName").value,email:$("#mEmail").value,username:"student"+nextIds.member,password:"1234",type:"student"});$("#memberOverlay").classList.remove("open");renderAll();toast("Member Added");}
+  $("#btnAddEmployee").onclick=()=>$("#employeeOverlay").classList.add("open");
+  $("#btnSaveEmployee").onclick=()=>{employees.push({id:nextIds.emp++,empNo:$("#eNo").value,name:$("#eName").value,email:$("#eEmail").value,category:$("#eCategory").value,address:$("#eAddress").value,salary:Number($("#eSalary").value),joining:$("#eJoin").value,username:$("#eNo").value.toLowerCase(),password:"1234"});$("#employeeOverlay").classList.remove("open");renderAll();toast("Employee Added");}
+  window.deleteEmp = (id)=>{ employees=employees.filter(e=>e.id!==id); renderAll();toast("Deleted"); }
+
+  // CIRCULATION
+  $("#btnIssue").onclick=()=>{const bookId=+$("#issueBookSelect").value, memberId=+$("#issueMemberSelect").value; const issued=$("#issueDate").value, due=$("#dueDate").value; if(!bookId||!memberId){toast("Select all");return;} loans.push({id:nextIds.loan++,bookId,memberId,issued,due,returned:false}); books.find(b=>b.id==bookId).copiesAvailable--; renderAll();toast("Book Issued"); }
+  window.openReturn = (id)=>{ currentReturnLoanId = id; const l=loans.find(x=>x.id==id); $("#returnBookInfo").textContent = books.find(b=>b.id==l.bookId).title; $("#returnDate").value = today(); $("#returnOverlay").classList.add("open"); }
+  $("#btnConfirmReturn").onclick=()=>{const l=loans.find(x=>x.id==currentReturnLoanId); l.returned=true; l.returnedOn=$("#returnDate").value; books.find(b=>b.id==l.bookId).copiesAvailable++; const late=daysLate(l.due, l.returnedOn); toast(late>0? `Returned. Fine: ₹${late*FINE}` : "Returned Successfully"); $("#returnOverlay").classList.remove("open"); renderAll(); }
+
+  // READER
+  window.openBook = (id)=>{ currentBook = books.find(b=>b.id==id); currentPage = 0; $("#readerTitle").textContent = currentBook.title; showPage(); $("#readerOverlay").classList.add("open"); }
+  function showPage(){ const pages = (currentBook.content||"No content").split('---'); $("#readerContent").textContent = pages[currentPage]||""; $("#pageNum").textContent = `Page ${currentPage+1} of ${pages.length}`; }
+  window.nextPage = ()=>{ const pages = currentBook.content.split('---'); if(currentPage < pages.length-1){ currentPage++; showPage(); } }
+  window.prevPage = ()=>{ if(currentPage > 0){ currentPage--; showPage(); } }
+  window.closeReader = ()=>$("#readerOverlay").classList.remove("open");
+
+  // AUTO LOGIN
+  if(localStorage.getItem("role")){ currentRole=localStorage.getItem("role"); currentUser=JSON.parse(localStorage.getItem("user")); $("#loginScreen").style.display="none"; $("#mainApp").classList.add("logged-in"); setPermissions(); renderAll(); }
+})();
+</script>
+</body>
+</html>
